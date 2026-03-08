@@ -40,11 +40,24 @@ Voraussetzungen:
 * Python 3.10+
 * pip
 
-Repository klonen:
+# Repository klonen:
+git clone <repo-url>
+cd <repo-ordner>
+(Oder das Projekt runterladen und das Verzeichnis mit dem IDE öffnen)
 
+
+# Virtuelle Umgebung erstellen
+python -m venv .venv   # oder "python3 -m venv .venv" auf Linux/Mac
+
+# Umgebung aktivieren
+# Windows PowerShell:
+.venv\Scripts\Activate.ps1
+# Windows CMD:
+.venv\Scripts\activate.bat
+# Linux / Mac:
+source .venv/bin/activate
 
 Abhängigkeiten installieren:
-
 ```
 pip install numpy fastapi uvicorn
 ```
