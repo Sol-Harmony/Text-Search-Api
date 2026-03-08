@@ -1,0 +1,4 @@
+Python ist eine Programmiersprache für Datenanalyse.
+FastAPI wird genutzt um APIs in Python zu erstellen.
+Maschinelles Lernen analysiert große Datenmengen.
+PHP wird häufig für Webentwicklung verwendet.
