@@ -6,6 +6,15 @@ from app.preprocessing import tokenize
 from app.tfidf import compute_tf, compute_idf, compute_tfidf
 from app.search import search
 
+from fastapi import HTTPException       #Exception Handling
+import logging                          #logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
+
+logger = logging.getLogger(__name__)
 documents          = []
 tokenized_docs     = []
 tf_values          = []
@@ -14,21 +23,28 @@ tfidf_values       = []
 
 # Asynchroner Code, der beim Starten des Programms ausgeführt wird
 @asynccontextmanager
-async def lifespan(app    : FastAPI):
+async def lifespan(app: FastAPI):
     global documents, tokenized_docs, tf_values, idf_values, tfidf_values
-    # Dokumente laden
-    documents      = load_documents("data/documents.txt")
-    # Alle Dokumente tokenisieren (Text in einzelne Wörter zerlegen)
-    tokenized_docs = [tokenize(doc) for doc in documents]
-    # Term Frequency für jedes Dokument berechnen (Wie oft kommt ein Wort im jeweiligen Dokument vor)
-    tf_values      = compute_tf(tokenized_docs)
-    # Inverse Document Frequency berechnen (Wie selten ein Wort im gesamten Dokumentensatz ist)
-    idf_values     = compute_idf(tokenized_docs)
-    # TF-IDF Werte berechnen. Kombination aus Wort-Häufigkeit und Seltenheit
-    tfidf_values   = compute_tfidf(tf_values, idf_values)
+    
+    try:
+        # Dokumente laden
+        documents      = load_documents("data/documents.txt")
+        # Tokenisierung
+        tokenized_docs = [tokenize(doc) for doc in documents]
+        # TF
+        tf_values      = compute_tf(tokenized_docs)
+        # IDF
+        idf_values     = compute_idf(tokenized_docs)
+        # TF-IDF
+        tfidf_values   = compute_tfidf(tf_values, idf_values)
 
-    print("Dokumente geladen:", len(documents))
-    print("TF-IDF Index erstellt")
+        logger.info(f"Dokumente geladen: {len(documents)}")
+        logger.info("TF-IDF Index erstellt")
+
+    except Exception as e:
+        logger.error(f"Fehler beim Start: {e}")
+        raise
+
     yield
 
 # Initialisierung der FastAPI Anwendung und die benötigten Variablen
@@ -67,23 +83,53 @@ def get_tfidf():
 # Such-Endpunkt. K entscheidet, wie viele ergebnisse man haben wiil. Z.B /search?q=HIER FRAGE STELLEN&k=2
 @app.get("/search")
 def search_endpoint(q: str, k: int = 1):
-    k             = min(k, 10)
-    tokens        = tokenize(q)
-    tf_query      = compute_tf([tokens])[0]
-    tfidf_query   = compute_tfidf([tf_query], idf_values)[0]
+    logger.info(f"Suchanfrage erhalten: '{q}' mit k={k}")
+    
+    if not q.strip():
+        raise HTTPException(status_code=400, detail="Query darf nicht leer sein")
 
-    results = search(tfidf_query, tfidf_values)
+    if k <= 0:
+        raise HTTPException(status_code=400, detail="k muss größer als 0 sein")
 
-    answers = []
+    if not documents:
+        raise HTTPException(status_code=500, detail="Keine Dokumente geladen")
 
-    for index, score in results[:k]:
-        answers.append({
-            "text": documents[index],
-            "score": score
-        })
+    try:
+        k = min(k, 10)
+        tokens = tokenize(q)
 
-    return {
-        "query": q,
-        "top_k": k,
-        "results": answers
-    }
+        if not tokens:
+            raise HTTPException(
+                status_code=400,
+                detail="Suchanfrage enthaelt nur Stopwoerter oder ungueltige Begriffe"
+            )
+
+        tf_query    = compute_tf([tokens])[0]
+        tfidf_query = compute_tfidf([tf_query], idf_values)[0]
+
+        results = search(tfidf_query, tfidf_values)
+
+        answers = []
+        for index, score in results[:k]:
+            answers.append({
+                "text": documents[index],
+                "score": score
+            })
+            
+        logger.info(f"{len(answers)} Ergebnisse zurueckgegeben")
+        
+        return {
+            "query": q,
+            "top_k": k,
+            "results": answers
+        }
+
+    except HTTPException:
+        raise  
+
+    except Exception as e:
+        logger.error(f"Fehler bei Suche: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Interner Fehler: {str(e)}"
+        )

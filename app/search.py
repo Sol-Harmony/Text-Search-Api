@@ -19,7 +19,7 @@ def vectorize(doc, vocab):
 
     return np.array(vector)
 
-
+#Aehnlichkeitsmaß bzw. Cosine Similarity
 def cosine_similarity(vec1, vec2):
 
     dot   = np.dot(vec1, vec2)

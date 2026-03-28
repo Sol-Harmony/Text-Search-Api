@@ -1,5 +1,5 @@
 import re
-
+# Stopword Filterung
 STOPWORDS = {
     "der","die","das","ein","eine","und","oder",
     "ist","im","in","am","an","zu","für","mit",
