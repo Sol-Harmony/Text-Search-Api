@@ -1,4 +1,6 @@
-# Text Search API – Prototyp (Readme generiert mit ChatGPT und überprüft von Hamzah Mansor)
+# Text Search API - Entwicklung einer Dokumentensuch-API auf Basis klassischer Textanalyse in Python
+
+Github Repository: https://github.com/Sol-Harmony/Text-Search-Api
 
 ## Beschreibung
 
@@ -156,53 +158,56 @@ Beispielantwort:
 ---
 # Funktionsweise
 
-Beim Start des Servers passiert Folgendes:
+Beim Start des Servers wird die Dokumentensammlung einmalig vorbereitet, um eine effiziente Suche zu ermöglichen:
 
 1. Dokumente werden aus der Datei geladen
-2. Alle Dokumente werden tokenisiert
-3. TF Werte werden berechnet
-4. IDF Werte werden berechnet
-5. TF-IDF Vektoren werden erstellt
+2. Die Texte werden tokenisiert (in einzelne Wörter zerlegt)
+3. Eine Vorverarbeitung wird durchgeführt:
+   - Umwandlung in Kleinbuchstaben
+   - Entfernen von Stopwords (z. B. „und“, „der“, „die“)
+4. Term-Frequency (TF) Werte werden für jedes Dokument berechnet
+5. Inverse Document Frequency (IDF) Werte werden für den gesamten Dokumentensatz berechnet
+6. Aus TF und IDF werden TF-IDF Vektoren erstellt
 
-Diese Schritte werden **nur einmal beim Start** durchgeführt, um die Performance zu verbessern.
+Diese vorberechneten Daten werden im Speicher gehalten, sodass Suchanfragen schnell verarbeitet werden können.
+
 ---
 
-# Aktueller Stand
-Der Prototyp implementiert:
+## Suchprozess
 
-* Dokumentenimport
-* Tokenisierung
-* TF-IDF Berechnung
-* Ranking von Dokumenten
-* REST API zur Abfrage
+Bei einer Suchanfrage läuft folgender Ablauf ab:
 
-Ziel ist es, die grundlegenden Konzepte von **Information Retrieval und Textsuche** zu demonstrieren.
+1. Die Anfrage wird wie ein Dokument verarbeitet:
+   - Tokenisierung
+   - Stopword-Filterung
+   - Umwandlung in einen TF-IDF Vektor
+
+2. Der Anfrage-Vektor wird mit allen Dokument-Vektoren verglichen
+
+3. Die Ähnlichkeit wird mithilfe der **Cosine Similarity** berechnet
+
+4. Die Dokumente werden nach ihrer Ähnlichkeit sortiert
+
+5. Die Top-k relevantesten Dokumente werden als Ergebnis zurückgegeben
+
 ---
 
-# Mögliche Erweiterungen
+## Fehlerbehandlung und Robustheit
 
-Folgende Verbesserungen sind für die finale Version geplant bzw. möglich:
+Zur Verbesserung der Stabilität wurden zusätzliche Maßnahmen implementiert:
 
-### Verbesserte Textverarbeitung
-* Stopword-Filterung
-* Normalisierung von Groß-/Kleinschreibung
+- Leere oder ungültige Suchanfragen werden abgefangen
+- Fehler bei der Verarbeitung führen zu klaren HTTP-Fehlermeldungen
+- Kritische Abschnitte der Anwendung sind durch Try-Except-Blöcke abgesichert
 
-### Verbesserte Suche
-* Cosine Similarity für genaueres Ranking
-* Gewichtung von Begriffen
-* bessere Query-Verarbeitung
-
-### Dokumentverarbeitung
-* Aufteilung langer Dokumente in kleinere Textabschnitte (Chunks)
-* Unterstützung mehrerer Dokumentdateien
-* Upload neuer Dokumente über die API
-
-### Erweiterte API
-* Pagination für große Ergebnismengen
-* Dokument-Metadaten
-* Logging von Suchanfragen
-
-### Erweiterte Suche
-* semantische Suche mit Embeddings
-* Integration eines Sprachmodells zur Antwortgenerierung
 ---
+
+## Logging
+
+Zur besseren Nachvollziehbarkeit verwendet das System das Python-Logging-Modul:
+
+- Start des Servers und Laden der Dokumente werden protokolliert
+- Suchanfragen werden erfasst
+- Fehler und Ausnahmen werden geloggt
+
+Dies erleichtert Debugging und Analyse des Systemverhaltens.
